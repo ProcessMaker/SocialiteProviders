@@ -155,6 +155,7 @@ class Provider extends AbstractProvider
      */
     public function auth($user, $password)
     {
+        $this->errorMessage = '';
         $setting = $this->getLDAPSettings();
 
         if (!(is_array($setting) && !empty($setting))) {
@@ -196,7 +197,6 @@ class Provider extends AbstractProvider
         }
 
         session()->put('ldap-auth-user', $entry);
-        $this->errorMessage = 'The user has permissions and the password is correct.';
         return true;
     }
 
