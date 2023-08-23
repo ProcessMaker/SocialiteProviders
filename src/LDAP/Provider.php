@@ -158,12 +158,15 @@ class Provider extends AbstractProvider
         $setting = $this->getLDAPSettings();
 
         if (!(is_array($setting) && !empty($setting))) {
+            $this->errorMessage = 'The LDAP configuration values do not exist or have not been set.';
             return false;
         }
         if (!isset($setting['services.ldap.enabled'])) {
+            $this->errorMessage = '"The configuration services.ldap.enabled does not exist."';
             return false;
         }
         if ($setting['services.ldap.enabled'] === false) {
+            $this->errorMessage = 'The configuration is disabled services.ldap.enabled is false.';
             return false;
         }
 
