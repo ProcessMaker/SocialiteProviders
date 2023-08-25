@@ -171,28 +171,15 @@ class Provider extends AbstractProvider
             return false;
         }
 
-        $identifier = $setting['services.ldap.identifiers.user'] ?? 'samaccountname';
-
         $connection = $this->getLDAPConnection($setting);
-
-        $username = $user->username;
-        $query = $connection->query();
-        $results = $query
-            ->where($identifier, '=', $username)
-            ->select(['cn', $identifier, 'userPassword'])
-            ->get();
-
-        if (count($results) <= 0) {
-            $this->errorMessage = 'The user was not found.';
+        if (!$connection->auth()->attempt($user->meta->dn, $password, $stayAuthenticated = true)) {
+            $this->errorMessage = 'The password is incorrect.';
             return false;
         }
 
-        $entry = $query->first();
-        $sw = isset($entry['userpassword']) && isset($entry['userpassword'][0]);
-        $userPassword = $sw ? $entry['userpassword'][0] : '';
-
-        if ($password !== $userPassword) {
-            $this->errorMessage = 'The password is incorrect.';
+        $entry = $connection->query()->find($user->meta->dn);
+        if (empty($entry)) {
+            $this->errorMessage = 'The user was not found.';
             return false;
         }
 
@@ -209,13 +196,44 @@ class Provider extends AbstractProvider
     public function user()
     {
         $setting = $this->getLDAPSettings();
-        $identifier = $setting['services.ldap.identifiers.user'] ?? 'samaccountname';
+        $identifier = $setting['services.ldap.identifiers.user'] ?? 'uid';
 
         $user = session()->get('ldap-auth-user');
-        $sw = isset($user[$identifier]) && isset($user[$identifier][0]);
+        $username = isset($user[$identifier]) && isset($user[$identifier][0]) ?
+            $user[$identifier][0] :
+            '';
+
         $obj = new \stdClass;
-        $obj->id = ''; //this only for compatibility
-        $obj->username = $sw ? $user[$identifier][0] : '';
+        $obj->id = '';
+        $obj->username = $username;
+        $obj->user = [
+            'dn' => $user['dn'] ?? '',
+            'authenticationType' => 'ldap'
+        ];
+        //this only for compatibility
+        $obj->name = $username;
+        $obj->nickname = $username;
+        $obj->email = $username . '@' . $this->extractDomainFromDN($obj->user['dn']);
         return $obj;
+    }
+
+    /**
+     * This extracts the domain from a string representing a DN.
+     * 
+     * @param string $dn
+     * @return string
+     */
+    protected function extractDomainFromDN(string $dn): string
+    {
+        $dn = strtolower($dn);
+        $dn = str_replace(" ", "", $dn);
+        $dn = explode(",", $dn);
+        foreach ($dn as $key => $value) {
+            $dn[$key] = strpos($value, 'dc=') === false ?
+                '' :
+                str_replace("dc=", "", $value);
+        }
+        $dn = array_filter($dn);
+        return implode(".", $dn);
     }
 }
