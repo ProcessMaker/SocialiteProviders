@@ -1,0 +1,19 @@
+{
+    "name": "socialiteproviders/ldap",
+    "description": "LDAP Provider for Laravel Socialite",
+    "license": "MIT",
+    "authors": [{
+        "homepage": "https://www.processmaker.com"
+    }],
+    "require": {
+        "php": "^7.2",
+        "socialiteproviders/manager": "^4.0",
+        "ext-json": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "SocialiteProviders\\LDAP\\": ""
+        }
+    }
+}
+
