@@ -17,7 +17,7 @@ function getCertificateContent($setting)
     if (empty(config('services.saml.' . $setting))) {
         return null;
     }
-    return file_get_contents(getcwd().'/../storage/app/private/settings/' .'services.saml.' . $setting);
+    return file_get_contents(storage_path('app/private/settings/') .'services.saml.' . $setting);
 }
 
 function stripCertificateDelimiters($cert)
