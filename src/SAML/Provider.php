@@ -20,9 +20,9 @@ class Provider extends AbstractProvider
      * {@inheritdoc}
      */
     protected $scopes = [''];
-    
+
     public $user;
-    
+
     public function __construct()
     {
         config(['saml2_settings' => require_once('config/saml2_settings.php')]);
@@ -74,19 +74,19 @@ class Provider extends AbstractProvider
 
         return json_decode($response->getBody(), true);
     }
-    
+
     /**
      * {@inheritdoc}
      */
     protected function mapUserToObject($user)
     {
         $defaults = ['id', 'nickname', 'name', 'email', 'avatar'];
-        
+
         $raw = [];
         $map = [];
-        
+
         $map['id'] = $user->getUserId();
-        
+
         foreach (config('services.saml.variables') as $property => $samlAttribute) {
             if ($samlAttribute) {
                 if ($value = $user->getAttribute($samlAttribute)) {
@@ -96,27 +96,39 @@ class Provider extends AbstractProvider
                         $map[$property] = $value;
                     }
                 }
+                // if the attribute does not exist we try to evaluate an expression
+                // any $variable in the expression is modified to $user->getAttribute('variable')
+                else {
+                    $value = eval( 'return ' . preg_replace('/\$(\w+)/', '$user->getAttribute(\'$1\')', $samlAttribute) . ';');
+                    if ($value) {
+                        if (is_array($value)) $value = reset($value);
+                        $raw[$property] = $value;
+                        if (in_array($property, $defaults)) {
+                            $map[$property] = $value;
+                        }
+                    }
+                }
             }
         }
-        
+
         if (!isset($map['name'])) {
             $name = [];
-            
+
             if (isset($raw['firstname'])) {
                 $name[] = $raw['firstname'];
             }
-            
+
             if (isset($raw['lastname'])) {
                 $name[] = $raw['lastname'];
             }
-            
+
             if (count($name)) {
                 $map['name'] = implode(' ', $name);
             }
         }
-        
+
         $raw['raw'] = $user->getAttributes();
-        
+
         return (new User())->setRaw($raw)->map($map);
     }
 
@@ -129,45 +141,45 @@ class Provider extends AbstractProvider
             'grant_type' => 'authorization_code'
         ]);
     }
-    
+
     private function getSaml2Auth()
     {
         $auth = Saml2Auth::loadOneLoginAuthFromIpdConfig('default');
         return new Saml2Auth($auth);
     }
-    
+
     private function getController()
     {
         return new SAMLController;
     }
-    
+
     public function redirect()
     {
         return $this->getController()->login($this->getSaml2Auth());
     }
-    
+
     public function metadata()
     {
         return $this->getController()->metadata($this->getSaml2Auth());
     }
-    
+
     public function user()
     {
         $saml2Auth = $this->getSaml2Auth();
         $errors = $saml2Auth->acs();
-        
+
         if (!empty($errors)) {
             $message = 'SAML Error';
-            
+
             if (isset($errors['last_error_reason'])) {
                 $message .= ': ' . $errors['last_error_reason'];
             }
-            
+
             throw new InvalidStateException($message);
         }
-        
+
         $user = $this->mapUserToObject($saml2Auth->getSaml2User());
-        
+
         return $user;
     }
 }
