@@ -22,29 +22,11 @@ class Provider extends AbstractProvider
     protected $scopes = [''];
     
     public $user;
-
-    private static ?array $saml2Settings = null;
-
-    private static ?array $defaultIdpSettings = null;
-
+    
     public function __construct()
     {
-        if (self::$saml2Settings === null) {
-            $saml2SettingsPath = file_exists(config_path('saml2_settings.php'))
-                ? config_path('saml2_settings.php')
-                : __DIR__ . '/config/saml2_settings.php';
-
-            self::$saml2Settings = require $saml2SettingsPath;
-        }
-
-        if (self::$defaultIdpSettings === null) {
-            self::$defaultIdpSettings = require __DIR__ . '/config/default_idp_settings.php';
-        }
-
-        config([
-            'saml2_settings' => self::$saml2Settings,
-            'saml2.default_idp_settings' => self::$defaultIdpSettings,
-        ]);
+        config(['saml2_settings' => require('config/saml2_settings.php')]);
+        config(['saml2.default_idp_settings' => require('config/default_idp_settings.php')]);
     }
 
     /**
