@@ -11,28 +11,6 @@ $idp_host = env('SAML2_'.$this_idp_env_id.'_IDP_HOST', 'http://localhost:8000/si
 
 $signed = config('services.saml.adfs_crt') && config('services.saml.adfs_key');
 
-
-function getCertificateContent($setting)
-{
-    if (empty(config('services.saml.' . $setting))) {
-        return null;
-    }
-    return file_get_contents(storage_path('app/private/settings/') .'services.saml.' . $setting);
-}
-
-function stripCertificateDelimiters($cert)
-{
-    if (empty($cert)) {
-        return null;
-    }
-    $result = $cert;
-    $result = str_replace('-----BEGIN CERTIFICATE-----', "", $result);
-    $result = str_replace('-----END CERTIFICATE-----', "", $result);
-    $result = str_replace(' ', '', $result);
-    return $result;
-}
-
-
 return $settings = array(
 
     /*****
@@ -82,8 +60,8 @@ return $settings = array(
             // Leave blank to use the '{idpName}_sls' route, e.g. 'test_sls'
             'url' => '',
         ),
-        'x509cert' => stripCertificateDelimiters(getCertificateContent('adfs_crt')),
-        'privateKey' => getCertificateContent('adfs_key')
+        'x509cert' => SAMLController::stripCertificateDelimiters(SAMLController::getCertificateContent('adfs_crt')),
+        'privateKey' => SAMLController::getCertificateContent('adfs_key')
     ),
 
     // Identity Provider Data that we want connect with our SP

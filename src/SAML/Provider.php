@@ -25,8 +25,8 @@ class Provider extends AbstractProvider
     
     public function __construct()
     {
-        config(['saml2_settings' => require_once('config/saml2_settings.php')]);
-        config(['saml2.default_idp_settings' => require_once('config/default_idp_settings.php')]);
+        config(['saml2_settings' => require('config/saml2_settings.php')]);
+        config(['saml2.default_idp_settings' => require('config/default_idp_settings.php')]);
     }
 
     /**
